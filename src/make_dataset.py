@@ -3,31 +3,24 @@ import shutil
 from pathlib import Path
 import cv2
 import numpy as np
-from tqdm import tqdm  # İlerleme çubuğu için
+from tqdm import tqdm  # İlerleme çubuğu
 
 # --- AYARLAR ---
-# Proje kök dizinini bul (src klasöründen bir üst dizine çık)
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Ham Veri Yolları (Senin LS çıktılarına göre)
 RAW_DATA_DIR = BASE_DIR / "data/raw/DENTEX"
 
-# Train Yolları
 TRAIN_INPUT_DIR = RAW_DATA_DIR / "train/training_data/quadrant-enumeration-disease"
 TRAIN_JSON = TRAIN_INPUT_DIR / "train_quadrant_enumeration_disease.json"
 TRAIN_IMAGES = TRAIN_INPUT_DIR / "xrays"
 
-# Val Yolları (Dikkat: Val klasöründe tire yerine alt çizgi kullanılmıştı)
 VAL_INPUT_DIR = RAW_DATA_DIR / "val/validation_data/quadrant_enumeration_disease"
-# Val JSON dosyası ana dizindeydi, onu buraya referans veriyoruz
 VAL_JSON = RAW_DATA_DIR / "validation_triple.json" 
 VAL_IMAGES = VAL_INPUT_DIR / "xrays"
 
 # Hedef Klasör
 PROCESSED_DIR = BASE_DIR / "data/processed"
-IMG_SIZE = 640  # YOLO standart boyutu
+IMG_SIZE = 640
 
-# Sınıf Haritası (Validation JSON'dan öğrendiğimiz hastalık ID'leri)
 # YOLO sınıf ID'leri 0'dan başlamalıdır.
 CLASS_MAPPING = {
     0: 0, # Impacted
@@ -37,16 +30,16 @@ CLASS_MAPPING = {
 }
 
 def setup_directories():
-    """YOLO klasör yapısını oluşturur."""
+    #YOLO klasör yapısını oluşturur.
     for split in ['train', 'val']:
         (PROCESSED_DIR / split / 'images').mkdir(parents=True, exist_ok=True)
         (PROCESSED_DIR / split / 'labels').mkdir(parents=True, exist_ok=True)
     print(f"✅ Klasör yapısı hazır: {PROCESSED_DIR}")
 
 def convert_bbox_to_yolo(bbox, img_width, img_height):
-    """COCO bbox (x_min, y_min, w, h) -> YOLO bbox (x_center, y_center, w, h) normalize."""
+    #COCO bbox (x_min, y_min, w, h) -> YOLO bbox (x_center, y_center, w, h) normalize.
     x_min, y_min, w, h = bbox
-    
+    #Merkez noktayı bul.
     x_center = (x_min + w / 2) / img_width
     y_center = (y_min + h / 2) / img_height
     width = w / img_width
@@ -55,7 +48,7 @@ def convert_bbox_to_yolo(bbox, img_width, img_height):
     return x_center, y_center, width, height
 
 def resize_image_letterbox(image, target_size):
-    """Resmi bozmadan (aspect ratio koruyarak) target_size'a sığdırır ve padding ekler."""
+    #Resmi bozmadan (aspect ratio koruyarak) target_size'a sığdırır ve padding ekler.
     h, w = image.shape[:2]
     scale = min(target_size / w, target_size / h)
     nw, nh = int(w * scale), int(h * scale)
@@ -73,7 +66,7 @@ def resize_image_letterbox(image, target_size):
     return image_padded, scale, dx, dy
 
 def process_dataset(json_path, image_dir, split_name):
-    """Verilen veri setini işler, dönüştürür ve kaydeder."""
+    #Verilen veri setini işler, dönüştürür ve kaydeder.
     print(f"\n🚀 {split_name.upper()} veri seti işleniyor...")
     
     # JSON Yükle
