@@ -1,0 +1,15 @@
+# data.yaml
+# Dental-Diagnosis-Ops Dataset Configuration
+
+train: data/processed/train/images
+val: data/processed/val/images
+test:
+
+# Sınıf Sayısı
+nc: 4
+
+names:
+  0: Impacted
+  1: Caries
+  2: Periapical Lesion
+  3: Deep Caries

@@ -21,7 +21,6 @@ VAL_IMAGES = VAL_INPUT_DIR / "xrays"
 PROCESSED_DIR = BASE_DIR / "data/processed"
 IMG_SIZE = 640
 
-# YOLO sınıf ID'leri 0'dan başlamalıdır.
 CLASS_MAPPING = {
     0: 0, # Impacted
     1: 1, # Caries
@@ -30,14 +29,14 @@ CLASS_MAPPING = {
 }
 
 def setup_directories():
-    #YOLO klasör yapısını oluşturur.
+    #YOLO klasör yapısı
     for split in ['train', 'val']:
         (PROCESSED_DIR / split / 'images').mkdir(parents=True, exist_ok=True)
         (PROCESSED_DIR / split / 'labels').mkdir(parents=True, exist_ok=True)
     print(f"✅ Klasör yapısı hazır: {PROCESSED_DIR}")
 
 def convert_bbox_to_yolo(bbox, img_width, img_height):
-    #COCO bbox (x_min, y_min, w, h) -> YOLO bbox (x_center, y_center, w, h) normalize.
+    
     x_min, y_min, w, h = bbox
     #Merkez noktayı bul.
     x_center = (x_min + w / 2) / img_width
@@ -48,17 +47,16 @@ def convert_bbox_to_yolo(bbox, img_width, img_height):
     return x_center, y_center, width, height
 
 def resize_image_letterbox(image, target_size):
-    #Resmi bozmadan (aspect ratio koruyarak) target_size'a sığdırır ve padding ekler.
+    
     h, w = image.shape[:2]
     scale = min(target_size / w, target_size / h)
     nw, nh = int(w * scale), int(h * scale)
     
     image_resized = cv2.resize(image, (nw, nh))
     
-    # Padding (Dolgu) oluştur
+    # Padding (Dolgu)
     image_padded = np.full((target_size, target_size, 3), 128, dtype=np.uint8) # Gri dolgu
     
-    # Resmi merkeze yerleştir
     dx = (target_size - nw) // 2
     dy = (target_size - nh) // 2
     image_padded[dy:dy+nh, dx:dx+nw] = image_resized
@@ -66,7 +64,7 @@ def resize_image_letterbox(image, target_size):
     return image_padded, scale, dx, dy
 
 def process_dataset(json_path, image_dir, split_name):
-    #Verilen veri setini işler, dönüştürür ve kaydeder.
+   
     print(f"\n🚀 {split_name.upper()} veri seti işleniyor...")
     
     # JSON Yükle
@@ -91,7 +89,7 @@ def process_dataset(json_path, image_dir, split_name):
         
         # Resim dosyasını kontrol et
         if not src_path.exists():
-            # Bazen dosya isimleri json ile diskte uyuşmayabilir, basit bir kontrol
+            
             continue
             
         # 1. RESMİ OKU VE BOYUTLANDIR
@@ -121,13 +119,13 @@ def process_dataset(json_path, image_dir, split_name):
                     w = bbox[2] * scale
                     h = bbox[3] * scale
                     
-                    # YOLO formatına çevir (Normalize et)
+                    # YOLO formatına çevir
                     xc, yc, nw, nh = convert_bbox_to_yolo((x, y, w, h), IMG_SIZE, IMG_SIZE)
                     
                     yolo_labels.append(f"{class_id} {xc:.6f} {yc:.6f} {nw:.6f} {nh:.6f}")
         
         # 3. KAYDET
-        # Resmi kaydet
+        
         save_img_path = PROCESSED_DIR / split_name / 'images' / file_name
         cv2.imwrite(str(save_img_path), processed_img)
         
